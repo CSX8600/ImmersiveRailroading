@@ -345,13 +345,13 @@ public class LocomotiveSteam extends Locomotive {
 			
 			double phase;
 			
-			Vec3d fakeMotion = new Vec3d(this.motionX, this.motionY, this.motionZ);//VecUtil.fromYaw(this.getCurrentSpeed().minecraft(), this.rotationYaw);
+			Vec3d fakeMotion = new Vec3d(this.motionX, this.motionY, this.motionZ);//VecUtil.fromWrongYaw(this.getCurrentSpeed().minecraft(), this.rotationYaw);
 			
 			List<RenderComponent> smokes = this.getDefinition().getComponents(RenderComponentType.PARTICLE_CHIMNEY_X, gauge);
 			if (smokes != null && ConfigGraphics.particlesEnabled) {
 				phase = getPhase(4, 0);
 				for (RenderComponent smoke : smokes) {
-					Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateYaw(smoke.center(), this.rotationYaw + 180));
+					Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateWrongYaw(smoke.center(), this.rotationYaw + 180));
 					particlePos = particlePos.subtract(fakeMotion);
 					if (this.ticksExisted % 1 == 0 ) {
 						float darken = 0;
@@ -395,7 +395,7 @@ public class LocomotiveSteam extends Locomotive {
 					(this.getBoilerPressure() > 0 || !Config.isFuelRequired(gauge))
 				) {
 				for (RenderComponent whistle : whistles) {
-					Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateYaw(whistle.center(), this.rotationYaw + 180));
+					Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateWrongYaw(whistle.center(), this.rotationYaw + 180));
 					particlePos = particlePos.subtract(fakeMotion);
 					
 					float darken = 0;
@@ -456,7 +456,7 @@ public class LocomotiveSteam extends Locomotive {
 					double phaseSpike = Math.pow(phase, 4);
 					
 					if (phaseSpike >= 0.6 && csm > 0.1 && csm  < 20 && ConfigGraphics.particlesEnabled) {
-						Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateYaw(piston.min(), this.rotationYaw + 180));
+						Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateWrongYaw(piston.min(), this.rotationYaw + 180));
 						EntitySmokeParticle sp = new EntitySmokeParticle(worldObj, 80, 0, 0.6f, 0.2);
 						sp.setPosition(particlePos.xCoord, particlePos.yCoord, particlePos.zCoord);
 						double accell = 0.3 * gauge.scale();
@@ -466,7 +466,7 @@ public class LocomotiveSteam extends Locomotive {
 						if (piston.side.contains("CENTER") ) {
 							accell = 0;
 						}
-						Vec3d sideMotion = fakeMotion.add(VecUtil.fromYaw(accell, this.rotationYaw+90));
+						Vec3d sideMotion = fakeMotion.add(VecUtil.fromWrongYaw(accell, this.rotationYaw+90));
 						sp.setVelocity(sideMotion.xCoord, sideMotion.yCoord+0.01, sideMotion.zCoord);
 						worldObj.spawnEntityInWorld(sp);
 					}
@@ -523,7 +523,7 @@ public class LocomotiveSteam extends Locomotive {
 				}
 				if (ConfigGraphics.particlesEnabled) {
 					for (RenderComponent steam : steams) {
-						Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateYaw(steam.center(), this.rotationYaw + 180));
+						Vec3d particlePos = this.getPositionVector().add(VecUtil.rotateWrongYaw(steam.center(), this.rotationYaw + 180));
 						particlePos = particlePos.subtract(fakeMotion);
 						EntitySmokeParticle sp = new EntitySmokeParticle(worldObj, 40, 0, 0.2f, steam.width());
 						sp.setPosition(particlePos.xCoord, particlePos.yCoord, particlePos.zCoord);

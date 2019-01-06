@@ -33,7 +33,7 @@ public class OBJTextureSheet {
 	private int sheetHeight = 0;
 	public final int textureID;
 	private OBJModel model;
-	
+
 	private  class SubTexture {
 		public int realWidth;
 		private int realHeight;
@@ -49,8 +49,6 @@ public class OBJTextureSheet {
 
 		private boolean isFlatMaterial;
 		private int[] pixels;
-		
-		public final int sampPx;
 
 		
 		SubTexture(ResourceLocation tex, ResourceLocation fallback, Function<Integer, Integer> scale) throws IOException {
@@ -77,7 +75,6 @@ public class OBJTextureSheet {
 
 			pixels = new int[realWidth * realHeight];
 			image.getRGB(0, 0, realWidth, realHeight, pixels, 0, realWidth);
-	        sampPx = pixels[0];
 		}
 		SubTexture(String name, int r, int g, int b, int a) {
 			BufferedImage image = new BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB);
@@ -97,8 +94,6 @@ public class OBJTextureSheet {
 			
 			pixels = new int[realWidth * realHeight];
 			image.getRGB(0, 0, realWidth, realHeight, pixels, 0, realWidth);
-	        
-	        sampPx = pixels[0];
 		}
 		
 		public Vec2f extendSpace(List<Vec2f> vts) {
@@ -176,8 +171,10 @@ public class OBJTextureSheet {
 					GL11.glTexSubImage2D(GL11.GL_TEXTURE_2D, 0, offX, offY, realWidth, realHeight, GL11.GL_RGBA, GL11.GL_UNSIGNED_BYTE, buffer);
 				}
 			}
-			
-			pixels = null;
+
+			if (!ConfigGraphics.enableIconCache) {
+				pixels = null;
+			}
 		}
 		public int copiesU() {
 			return maxU - minU;
@@ -379,7 +376,7 @@ public class OBJTextureSheet {
 		GL11.glDeleteTextures(textureID);
 	}
 
-	public int samp(String mtlName) {
+	public int samp(String mtlName, float u, float v) {
 		if (model.materials.containsKey(mtlName)) {
 			ResourceLocation kd = model.materials.get(mtlName).texKd;
 			if (kd != null) {
@@ -387,7 +384,14 @@ public class OBJTextureSheet {
 			}
 		}
 		if (mappings.containsKey(mtlName)) {
-			return mappings.get(mtlName).sampPx;
+			SubTexture mapping = mappings.get(mtlName);
+			u = ((u % 1) + 1) % 1;
+			v = ((v % 1) + 1) % 1;
+			u = u * mapping.realWidth;
+			v = mapping.realHeight - v * mapping.realHeight;
+			v = (int)v;
+			u = (int)u;
+			return mapping.pixels[(int) (Math.min(v * mapping.realWidth + u, mapping.pixels.length-1))];
 		}
 		return 0;
 	}
@@ -403,5 +407,11 @@ public class OBJTextureSheet {
 			return mappings.get(mtlName).isFlatMaterial;
 		}
 		return false;
+	}
+
+	public void freePx() {
+		for (SubTexture tex : mappings.values()) {
+			tex.pixels = null;
+		}
 	}
 }
