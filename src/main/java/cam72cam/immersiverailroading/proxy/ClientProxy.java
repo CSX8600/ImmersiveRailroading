@@ -3,11 +3,14 @@ package cam72cam.immersiverailroading.proxy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Function;
 
+import cam72cam.immersiverailroading.render.ExpireableList;
+import cam72cam.immersiverailroading.render.OBJTextureSheet;
+import cam72cam.immersiverailroading.tile.TileRailBase;
+import cam72cam.immersiverailroading.util.BlockUtil;
+import net.minecraft.nbt.NBTTagCompound;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL14;
@@ -78,6 +81,7 @@ import cam72cam.immersiverailroading.tile.TileMultiblock;
 import cam72cam.immersiverailroading.tile.TileRail;
 import cam72cam.immersiverailroading.tile.TileRailPreview;
 import cam72cam.immersiverailroading.util.GLBoolTracker;
+import cam72cam.immersiverailroading.util.PlacementInfo;
 import cam72cam.immersiverailroading.util.RailInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -142,6 +146,8 @@ import paulscode.sound.SoundSystemConfig;
 @EventBusSubscriber(Side.CLIENT)
 public class ClientProxy extends CommonProxy {
 	private static Map<KeyTypes, KeyBinding> keys = new HashMap<KeyTypes, KeyBinding>();
+	private static Map<Integer, ExpireableList<BlockPos, TileRailPreview>> previews = new HashMap<>();
+	private static ExpireableList<String, RailInfo> infoCache = new ExpireableList<>();
 
 	private static IRSoundManager manager;
 	
@@ -326,6 +332,9 @@ public class ClientProxy extends CommonProxy {
 		
 		ModelLoader.setCustomModelResourceLocation(IRItems.ITEM_PAINT_BRUSH, 0,
 				new ModelResourceLocation(IRItems.ITEM_PAINT_BRUSH.getRegistryName(), ""));
+
+		ModelLoader.setCustomModelResourceLocation(IRItems.ITEM_GOLDEN_SPIKE, 0,
+				new ModelResourceLocation(IRItems.ITEM_GOLDEN_SPIKE.getRegistryName(), ""));
 	}
 	
 	public static final class StockIcon extends TextureAtlasSprite
@@ -336,7 +345,7 @@ public class ClientProxy extends CommonProxy {
         {
             super(new ResourceLocation(ImmersiveRailroading.MODID, def.defID).toString());
             this.def = def;
-            this.width = this.height = 64;
+            this.width = this.height = ConfigGraphics.iconCacheSize;
         }
 
         @Override
@@ -350,19 +359,23 @@ public class ClientProxy extends CommonProxy {
         {
             BufferedImage image = new BufferedImage(this.getIconWidth(), this.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
             
-            String[][] map = def.getIcon(this.getIconWidth());
+            EntityRollingStockDefinition.IconPart[][] map = def.getIcon(this.getIconWidth());
 
             StockModel renderer = StockRenderCache.getRender(def.defID);
     		for (int x = 0; x < this.getIconWidth(); x++) {
     			for (int y = 0; y < this.getIconHeight(); y++) {
-    				if (map[x][y] != null && map[x][y] != "") {
-    					int color = renderer.textures.get(null).samp(map[x][y]);
+    				if (map[x][y] != null) {
+						EntityRollingStockDefinition.IconPart pt = map[x][y];
+    					int color = renderer.textures.get(null).samp(pt.mtl, pt.u, pt.v);
     					image.setRGB(x, this.getIconWidth() - (y + 1), color);
     				} else {
     					image.setRGB(x, this.getIconWidth() - (y + 1), 0);
     				}
     			}
     		}
+    		for (OBJTextureSheet tex : renderer.textures.values()) {
+    			tex.freePx();
+			}
             
             int[][] pixels = new int[Minecraft.getMinecraft().gameSettings.mipmapLevels + 1][];
             pixels[0] = new int[image.getWidth() * image.getHeight()];
@@ -554,6 +567,7 @@ public class ClientProxy extends CommonProxy {
 	@SubscribeEvent
 	public static void onRenderMouseover(DrawBlockHighlightEvent event) {
 		EntityPlayer player = event.getPlayer();
+		World world = player.world;
 		ItemStack stack = event.getPlayer().getHeldItemMainhand();
 		BlockPos pos = event.getTarget().getBlockPos();
 		
@@ -564,14 +578,24 @@ public class ClientProxy extends CommonProxy {
 		        float hitX = (float)(vec.x - pos.getX());
 		        float hitY = (float)(vec.y - pos.getY());
 		        float hitZ = (float)(vec.z - pos.getZ());
-		        
-		        if (player.getEntityWorld().getBlockState(pos).getBlock() instanceof BlockRailBase) {
-		        	pos = pos.down();
-		        }
-		        
-		        pos = pos.up();
-		        RailInfo info = new RailInfo(stack, player.world, player.getRotationYawHead(), pos, hitX, hitY, hitZ);
-		        
+
+				pos = pos.up();
+
+				if (BlockUtil.canBeReplaced(world, pos.down(), true)) {
+					if (!BlockUtil.isIRRail(world, pos.down()) || TileRailBase.get(world, pos.down()).getRailHeight() < 0.5) {
+						pos = pos.down();
+					}
+				}
+
+		        RailInfo info = new RailInfo(player.world, stack, new PlacementInfo(stack, player.getRotationYawHead(), pos, hitX, hitY, hitZ), null);
+		        String key = info.uniqueID + pos.toLong();
+				RailInfo cached = infoCache.get(key);
+		        if (cached != null) {
+					info = cached;
+				} else {
+		        	infoCache.put(key, info);
+				}
+
 		        GL11.glPushMatrix();
 				{
 					GLBoolTracker blend = new GLBoolTracker(GL11.GL_BLEND, true);
@@ -584,9 +608,10 @@ public class ClientProxy extends CommonProxy {
 	                double d0 = player.lastTickPosX + (player.posX - player.lastTickPosX) * event.getPartialTicks();
 	                double d1 = player.lastTickPosY + (player.posY - player.lastTickPosY) * event.getPartialTicks();
 	                double d2 = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * event.getPartialTicks();
-	                
-	                GL11.glTranslated(pos.getX()-d0, pos.getY()-d1, pos.getZ()-d2);
-	                
+
+					Vec3d placementPosition = info.placementInfo.placementPosition;
+	                GL11.glTranslated(placementPosition.x-d0, placementPosition.y-d1, placementPosition.z-d2);
+
 	                RailRenderUtil.render(info, true);
 
 					blend.restore();
@@ -765,7 +790,38 @@ public class ClientProxy extends CommonProxy {
 	public int getRenderDistance() {
 		return Minecraft.getMinecraft().gameSettings.renderDistanceChunks;
 	}
-	
+
+	@Override
+	public void addPreview(int dimension, TileRailPreview preview) {
+		if (!previews.containsKey(dimension)) {
+			previews.put(dimension, new ExpireableList<BlockPos, TileRailPreview>() {
+				@Override
+				public int lifespan() {
+					return 2;
+				}
+				@Override
+				public boolean sliding() {
+					return false;
+				}
+			});
+		}
+		ExpireableList<BlockPos, TileRailPreview> pvs = previews.get(dimension);
+		TileRailPreview curr = pvs.get(preview.getPos());
+		if (curr != null) {
+			if (curr.writeToNBT(new NBTTagCompound()).equals(preview.writeToNBT(new NBTTagCompound()))) {
+				preview = curr;
+			}
+		}
+		previews.get(dimension).put(preview.getPos(), preview);
+	}
+	public Collection<TileRailPreview> getPreviews() {
+		ExpireableList<BlockPos, TileRailPreview> pvs = previews.get(Minecraft.getMinecraft().player.dimension);
+		if (pvs != null) {
+			return pvs.values();
+		}
+		return null;
+	}
+
 	@SubscribeEvent
 	public static void configChanged(OnConfigChangedEvent event) {
 		if (event.getModID().equals(ImmersiveRailroading.MODID)) {

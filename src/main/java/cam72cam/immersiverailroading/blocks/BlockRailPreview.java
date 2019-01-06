@@ -2,9 +2,13 @@ package cam72cam.immersiverailroading.blocks;
 
 import java.util.Random;
 
+import cam72cam.immersiverailroading.IRItems;
 import cam72cam.immersiverailroading.ImmersiveRailroading;
 import cam72cam.immersiverailroading.library.GuiTypes;
+import cam72cam.immersiverailroading.tile.TileRailBase;
 import cam72cam.immersiverailroading.tile.TileRailPreview;
+import cam72cam.immersiverailroading.util.BlockUtil;
+import cam72cam.immersiverailroading.util.PlacementInfo;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -38,7 +42,7 @@ public class BlockRailPreview extends Block {
 			TileRailPreview tr = TileRailPreview.get(world, pos);
 			if (tr != null) {
 				world.setBlockToAir(pos);
-				tr.getRailRenderInfo().build(entityPlayer, pos);
+				tr.getRailRenderInfo().build(entityPlayer);
 				return true;
 			}
 		}
@@ -57,11 +61,19 @@ public class BlockRailPreview extends Block {
 			if (!worldIn.isRemote) {
 				TileRailPreview te = TileRailPreview.get(worldIn, pos);
 				if (te != null) {
-					te.setHit(hitX, hitY, hitZ);
+					if (BlockUtil.canBeReplaced(worldIn, pos.down(), true)) {
+						if (!BlockUtil.isIRRail(worldIn, pos.down()) || TileRailBase.get(worldIn, pos.down()).getRailHeight() < 0.5) {
+							pos = pos.down();
+						}
+					}
+					te.setPlacementInfo(new PlacementInfo(te.getItem(), playerIn.rotationYawHead, pos, hitX, hitY, hitZ));
 				}
 			}
 			return false;
 		} else {
+			if (playerIn.getHeldItem(hand).getItem() == IRItems.ITEM_GOLDEN_SPIKE) {
+				return false;
+			}
 			playerIn.openGui(ImmersiveRailroading.instance, GuiTypes.RAIL_PREVIEW.ordinal(), worldIn, pos.getX(), pos.getY(), pos.getZ());
 		}
 		return true;
