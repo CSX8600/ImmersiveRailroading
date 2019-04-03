@@ -138,12 +138,12 @@ public abstract class EntityRidableRollingStock extends EntityBuildableRollingSt
 		pos = new Vec3d(r.getCenterX(), pos.y, r.getCenterY());
 		
 		if (player.isSneaking()) {
-			System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
-			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));
+			/*System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
+			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));*/
 			return false;
 		} else if (player.isRiding() && player.getRidingEntity().getPersistentID() == this.getPersistentID()) {
-			System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
-			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));
+			/*System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
+			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));*/
 			return false;
 		} else {
 			if (!this.world.isRemote) {
