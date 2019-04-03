@@ -40,6 +40,7 @@ import cam72cam.immersiverailroading.multiblock.PlateRollerMultiblock;
 import cam72cam.immersiverailroading.multiblock.RailRollerMultiblock;
 import cam72cam.immersiverailroading.multiblock.SteamHammerMultiblock;
 import cam72cam.immersiverailroading.net.BuildableStockSyncPacket;
+import cam72cam.immersiverailroading.net.DebugPacket;
 import cam72cam.immersiverailroading.net.ItemRailUpdatePacket;
 import cam72cam.immersiverailroading.net.KeyPressPacket;
 import cam72cam.immersiverailroading.net.MRSSyncPacket;
@@ -133,6 +134,7 @@ public abstract class CommonProxy implements IGuiHandler {
     	ImmersiveRailroading.net.registerMessage(BuildableStockSyncPacket.Handler.class, BuildableStockSyncPacket.class, 8, Side.CLIENT);
     	ImmersiveRailroading.net.registerMessage(MultiblockSelectCraftPacket.Handler.class, MultiblockSelectCraftPacket.class, 9, Side.SERVER);
     	ImmersiveRailroading.net.registerMessage(SoundPacket.Handler.class, SoundPacket.class, 10, Side.CLIENT);
+    	ImmersiveRailroading.net.registerMessage(DebugPacket.Handler.class, DebugPacket.class, 11, Side.CLIENT);
 
     	NetworkRegistry.INSTANCE.registerGuiHandler(ImmersiveRailroading.instance, this);
     	

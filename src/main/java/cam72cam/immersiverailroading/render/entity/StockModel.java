@@ -1,17 +1,20 @@
 package cam72cam.immersiverailroading.render.entity;
 
+import java.nio.DoubleBuffer;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
 
 import cam72cam.immersiverailroading.ImmersiveRailroading;
 import cam72cam.immersiverailroading.entity.EntityBuildableRollingStock;
 import cam72cam.immersiverailroading.entity.EntityMoveableRollingStock;
 import cam72cam.immersiverailroading.entity.EntityMoveableRollingStock.PosRot;
+import cam72cam.immersiverailroading.entity.EntityRidableRollingStock;
 import cam72cam.immersiverailroading.entity.EntityRollingStock;
 import cam72cam.immersiverailroading.entity.Freight;
 import cam72cam.immersiverailroading.entity.LocomotiveDiesel;
@@ -21,6 +24,7 @@ import cam72cam.immersiverailroading.library.ItemComponentType;
 import cam72cam.immersiverailroading.library.RenderComponentType;
 import cam72cam.immersiverailroading.model.MultiRenderComponent;
 import cam72cam.immersiverailroading.model.RenderComponent;
+import cam72cam.immersiverailroading.model.BBModel.BoundingBox;
 import cam72cam.immersiverailroading.model.obj.OBJModel;
 import cam72cam.immersiverailroading.registry.EntityRollingStockDefinition;
 import cam72cam.immersiverailroading.registry.FreightDefinition;
@@ -106,12 +110,17 @@ public class StockModel extends OBJRender {
 			draw();
 		}
 		
+		/*EntityRidableRollingStock rStock = (EntityRidableRollingStock) stock;
+		
 		BufferBuilder b = Tessellator.getInstance().getBuffer();
 		b.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
-		Map<String, Pair<Vec3d, Vec3d>> bb = stock.getDefinition().getBBModel().boundingBoxes;
-		for (Pair<Vec3d, Vec3d> p : bb.values()) {
-			Vec3d mi = p.getLeft();
-			Vec3d ma = p.getRight();
+		List<BoundingBox> bbs = stock.getDefinition().getBBModel().boundingBoxes;
+		GL11.glPushMatrix();
+		GL11.glRotated(-(180 - stock.rotationYaw - 90), 0, 1, 0);
+		
+		for (BoundingBox bb : bbs) {
+			Vec3d mi = new Vec3d(bb.aabb.minX, bb.aabb.minY, bb.aabb.minZ);
+			Vec3d ma = new Vec3d(bb.aabb.maxX, bb.aabb.maxY, bb.aabb.maxZ);
 			b.pos(mi.x, mi.y, mi.z).endVertex();
 			b.pos(mi.x, ma.y, mi.z).endVertex();
 			b.pos(ma.x, ma.y, mi.z).endVertex();
@@ -124,6 +133,26 @@ public class StockModel extends OBJRender {
 		}
 		
 		Tessellator.getInstance().draw();
+		
+		for (Pair<Vec3d, Vec3d> p : rStock.rays.values()) {
+			Vec3d v1 = p.getLeft();
+			Vec3d v2 = p.getRight();
+			
+			GL11.glPushMatrix();
+			GL11.glColor3d(1, 0, 0);
+			GL11.glBegin(GL11.GL_QUADS);
+			
+			GL11.glVertex3d(v1.x, v1.y - 0.1, v1.z);
+			GL11.glVertex3d(v2.x, v2.y - 0.1, v2.z);
+			GL11.glVertex3d(v2.x, v2.y + 0.1, v2.z);
+			GL11.glVertex3d(v1.x, v1.y + 0.1, v1.z);
+			
+			GL11.glEnd();
+			GL11.glColor3d(1, 1, 1);
+			GL11.glPopMatrix();
+		}
+		
+		GL11.glPopMatrix();*/
 		
 		drawCargo(stock);
 		

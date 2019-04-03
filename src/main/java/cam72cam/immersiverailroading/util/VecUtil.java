@@ -38,4 +38,13 @@ public class VecUtil {
 	public static Vec3d between(Vec3d front, Vec3d rear) {
 		return new Vec3d((front.x + rear.x) / 2, (front.y + rear.y) / 2, (front.z + rear.z) / 2);
 	}
+	
+	public static Vec3d rotateYawPrecise (Vec3d v, float rot) {
+		float f = (float) Math.cos(rot);
+        float f1 = (float) Math.sin(rot);
+        double d0 = v.x * (double)f + v.z * (double)f1;
+        double d1 = v.y;
+        double d2 = v.z * (double)f - v.x * (double)f1;
+        return new Vec3d(d0, d1, d2);
+	}
 }

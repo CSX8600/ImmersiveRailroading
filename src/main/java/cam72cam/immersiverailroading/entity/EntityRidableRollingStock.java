@@ -1,20 +1,29 @@
 package cam72cam.immersiverailroading.entity;
 
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import cam72cam.immersiverailroading.Config;
+import cam72cam.immersiverailroading.ImmersiveRailroading;
 import cam72cam.immersiverailroading.entity.EntityCoupleableRollingStock.CouplerType;
 import cam72cam.immersiverailroading.interaction.RayCaster;
 import cam72cam.immersiverailroading.library.KeyTypes;
 import cam72cam.immersiverailroading.library.StockDeathType;
+import cam72cam.immersiverailroading.net.DebugPacket;
 import cam72cam.immersiverailroading.net.PassengerPositionsPacket;
 import cam72cam.immersiverailroading.util.BufferUtil;
 import cam72cam.immersiverailroading.util.VecUtil;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
@@ -27,12 +36,14 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public abstract class EntityRidableRollingStock extends EntityBuildableRollingStock {
 	private RayCaster rayCast;
+	public Map<Integer, Pair<Vec3d, Vec3d>> rays = new ConcurrentHashMap<Integer, Pair<Vec3d, Vec3d>>();
 	
 	public EntityRidableRollingStock(World world, String defID) {
 		super(world, defID);
@@ -104,19 +115,35 @@ public abstract class EntityRidableRollingStock extends EntityBuildableRollingSt
 
 	@Override
 	public boolean processInitialInteract(EntityPlayer player, EnumHand hand) {
+		float partialTicks = Minecraft.getMinecraft().getRenderPartialTicks();
+		
 		if (rayCast == null) {
-			this.rayCast = new RayCaster(getDefinition().getBBModel());
+			this.rayCast = new RayCaster(this.getDefinition().getBBModel());
 		}
 		
 		if (super.processInitialInteract(player, hand)) {
 			return true;
 		}
 		
+		Vec3d look = VecUtil.rotateYawPrecise(player.getLook(partialTicks), -(180 - this.rotationYaw - 90));
+		Vec3d pos = player.getPositionEyes(partialTicks).subtract(this.getPositionVector());
+		double angle = 180 - this.rotationYaw - 90;
+		
+		Area area = new Area(new Rectangle2D.Double(pos.x - 1, pos.z - 1, 2, 2));
+		AffineTransform transform = new AffineTransform();
+		transform.rotate(Math.toRadians(angle));
+		area.transform(transform);
+		Rectangle2D r = area.getBounds2D();
+
+		pos = new Vec3d(r.getCenterX(), pos.y, r.getCenterY());
+		
 		if (player.isSneaking()) {
-			System.out.println(rayCast.getHit(player.getPositionVector().addVector(0, player.getEyeHeight(), 0).subtract(this.getPositionVector()), player.getLookVec(), 0));
+			System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
+			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));
 			return false;
 		} else if (player.isRiding() && player.getRidingEntity().getPersistentID() == this.getPersistentID()) {
-			System.out.println(rayCast.getHit(passengerPositions.get(player.getPersistentID()).addVector(0, player.getEyeHeight(), 0), player.getLookVec(), 0));
+			System.out.println(rayCast.getHit(pos, look, 5, this.getPositionVector(), (float) angle, this.world));
+			ImmersiveRailroading.net.sendToAll(new DebugPacket(pos, look, this));
 			return false;
 		} else {
 			if (!this.world.isRemote) {
@@ -266,6 +293,19 @@ public abstract class EntityRidableRollingStock extends EntityBuildableRollingSt
 				}
 			}
 			dismounts.clear();
+		}
+		
+		for (int i : rays.keySet()) {
+			if (i > 2000) {
+				rays.remove(i);
+			} else {
+				rays.put(i + 1, rays.get(i));
+				rays.remove(i);
+			}
+		}
+		
+		if (world.isRemote) {
+			//System.out.println(rays.values());
 		}
 	}
 	
