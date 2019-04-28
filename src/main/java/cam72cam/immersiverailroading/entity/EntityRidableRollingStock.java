@@ -30,7 +30,6 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import util.Matrix4;
 
 public abstract class EntityRidableRollingStock extends EntityBuildableRollingStock {
 	public EntityRidableRollingStock(World world, String defID) {

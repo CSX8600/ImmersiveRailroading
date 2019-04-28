@@ -50,4 +50,30 @@ public class VecUtil {
 		return new Vec3d((front.xCoord + rear.xCoord) / 2, (front.yCoord + rear.yCoord) / 2, (front.zCoord + rear.zCoord) / 2);
 	}
 
+	public static Vec3d min(Vec3d a, Vec3d b) {
+		if (a.xCoord > b.xCoord) {
+			a = new Vec3d(b.xCoord, a.yCoord, a.zCoord);
+		}
+		if (a.yCoord > b.yCoord) {
+			a = new Vec3d(a.xCoord, b.yCoord, a.zCoord);
+		}
+		if (a.zCoord > b.zCoord) {
+			a = new Vec3d(a.xCoord, a.yCoord, b.zCoord);
+		}
+		return a;
+	}
+
+	public static Vec3d max(Vec3d a, Vec3d b) {
+		if (a.xCoord < b.xCoord) {
+			a = new Vec3d(b.xCoord, a.yCoord, a.zCoord);
+		}
+		if (a.yCoord < b.yCoord) {
+			a = new Vec3d(a.xCoord, b.yCoord, a.zCoord);
+		}
+		if (a.zCoord < b.zCoord) {
+			a = new Vec3d(a.xCoord, a.yCoord, b.zCoord);
+		}
+		return a;
+	}
+
 }

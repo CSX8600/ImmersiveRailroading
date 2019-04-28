@@ -15,7 +15,8 @@ public class ItemCastingCost {
 			return BAD_CAST_COST;
 		}
 		
-		int cost = 0;
+		int cost = BAD_CAST_COST;
+		int count = 1;
 		if (item.getItem() == IRItems.ITEM_ROLLING_STOCK_COMPONENT) {
 			ItemComponentType component = ItemComponent.getComponentType(item);
 			cost = component.getCastCost(ItemDefinition.get(item), ItemGauge.get(item));
@@ -23,14 +24,13 @@ public class ItemCastingCost {
 			cost = (int) Math.ceil(20 * ItemGauge.get(item).scale());
 		} else if (item.getItem() == IRItems.ITEM_AUGMENT) {
 			cost = (int) Math.ceil(8 * ItemGauge.get(item).scale());
-			item.stackSize = 8;
+			count = 8;
 		} else if (OreHelper.IR_STEEL_BLOCK.matches(item, false)) {
-			return 9;
+			cost = 9;
 		} else if (OreHelper.IR_STEEL_INGOT.matches(item, false)) {
-			return 1;
-		} else {
-			cost = BAD_CAST_COST;
+			cost = 1;
 		}
+		item.stackSize = count;
 		return cost;
 	}
 }
