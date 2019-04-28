@@ -180,7 +180,7 @@ public class StockItemModel implements IBakedModel {
 	*/
 	@Override
 	public ItemCameraTransforms getItemCameraTransforms() {
-		if (ConfigGraphics.enableIconCache && this.defID != null) {
+		if (ConfigGraphics.enableFlatIcons && this.defID != null) {
 			if (iconQuads.get(defID) == null) {
 				TextureMap map = Minecraft.getMinecraft().getTextureMapBlocks();
 				TextureAtlasSprite sprite = map.getAtlasSprite(new ResourceLocation(ImmersiveRailroading.MODID, defID).toString());

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.io.IOUtils;
+
 import cam72cam.immersiverailroading.net.*;
 
 import cam72cam.immersiverailroading.Config;
@@ -191,7 +193,7 @@ public abstract class CommonProxy implements IGuiHandler {
     			"  d",
     	        "  d",
     	        " dd",
-    		    'd', ingotStel));
+    		    'd', ingotSteel));
     	
     	GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(IRItems.ITEM_RADIO_CONTROL_CARD),
     		    " a ",
@@ -199,8 +201,8 @@ public abstract class CommonProxy implements IGuiHandler {
     		    " d ",
     			't', "oc:materialTransistor",
     		  	'd', "oc:dataCard1",
-    		  	'a', new ItemStack(Items.IRON_BARS),
-    		    'b', ingotStel));
+    		  	'a', new ItemStack(Blocks.IRON_BARS),
+    		    'b', ingotSteel));
         
     	
     	NetworkRegistry.INSTANCE.registerGuiHandler(ImmersiveRailroading.instance, this);
