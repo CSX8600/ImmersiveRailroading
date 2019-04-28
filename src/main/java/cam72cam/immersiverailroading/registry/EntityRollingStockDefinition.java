@@ -59,6 +59,8 @@ public abstract class EntityRollingStockDefinition {
 
 	public final String defID;
 	private String name = "Unknown";
+	private String modelerName = "N/A";
+	private String packName = "N/A";
 	private OBJModel model;
 	public Map<String, String> textureNames = null;
 	private Vec3d passengerCenter = new Vec3d(0, 0, 0);
@@ -112,6 +114,12 @@ public abstract class EntityRollingStockDefinition {
 
 	public void parseJson(JsonObject data) throws Exception  {
 		name = data.get("name").getAsString();
+		if (data.has("modeler")) {
+			this.modelerName = data.get("modeler").getAsString();
+		}
+		if (data.has("pack")) {
+			this.packName = data.get("pack").getAsString();
+		}
 		float darken = 0;
 		if (data.has("darken_model")) {
 			darken = data.get("darken_model").getAsFloat();
@@ -146,7 +154,7 @@ public abstract class EntityRollingStockDefinition {
 			List<InputStream> alts = ImmersiveRailroading.proxy.getResourceStreamAll(alt_textures);
 			for (InputStream input : alts) {
 				JsonParser parser = new JsonParser();
-				JsonElement variants = parser.parse(new InputStreamReader(input)).getAsJsonArray();
+				JsonElement variants = parser.parse(new InputStreamReader(input));
 				for (Entry<String, JsonElement> variant : variants.getAsJsonObject().entrySet()) {
 					textureNames.put(variant.getValue().getAsString(), variant.getKey());
 				}
@@ -246,7 +254,7 @@ public abstract class EntityRollingStockDefinition {
 		Set<String> groups = new HashSet<String>();
 		groups.addAll(model.groups());
 		
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 100; i++) {
 			if (unifiedBogies()) {
 				addComponentIfExists(RenderComponent.parsePosID(RenderComponentType.BOGEY_POS_WHEEL_X, this, groups, "FRONT", i), true);
 				addComponentIfExists(RenderComponent.parsePosID(RenderComponentType.BOGEY_POS_WHEEL_X, this, groups, "REAR", i), true);
@@ -605,10 +613,12 @@ public abstract class EntityRollingStockDefinition {
 		String transStr = TextUtil.translate(localStr);
 		return localStr != transStr ? transStr : name;
 	}
-
+	
 	public List<String> getTooltip(Gauge gauge) {
 		List<String> tips = new ArrayList<String>();
 		tips.add(GuiText.WEIGHT_TOOLTIP.toString(this.getWeight(gauge)));
+		tips.add(GuiText.MODELER_TOOLTIP.toString(modelerName));
+		tips.add(GuiText.PACK_TOOLTIP.toString(packName));
 		return tips;
 	}
 

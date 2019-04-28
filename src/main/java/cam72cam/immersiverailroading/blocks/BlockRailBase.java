@@ -1,16 +1,10 @@
 package cam72cam.immersiverailroading.blocks;
 
-import javax.annotation.Nonnull;
-
-import cam72cam.immersiverailroading.IRBlocks;
 import cam72cam.immersiverailroading.IRItems;
 import cam72cam.immersiverailroading.ImmersiveRailroading;
 import cam72cam.immersiverailroading.items.ItemTabs;
 import cam72cam.immersiverailroading.items.ItemTrackBlueprint;
-import cam72cam.immersiverailroading.items.nbt.ItemGauge;
-import cam72cam.immersiverailroading.library.Augment;
-import cam72cam.immersiverailroading.library.Gauge;
-import cam72cam.immersiverailroading.library.SwitchState;
+import cam72cam.immersiverailroading.library.*;
 import cam72cam.immersiverailroading.tile.SyncdTileEntity;
 import cam72cam.immersiverailroading.tile.TileRail;
 import cam72cam.immersiverailroading.tile.TileRailBase;
@@ -26,6 +20,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.EnumHand;
@@ -42,6 +37,8 @@ import net.minecraftforge.common.property.IUnlistedProperty;
 import net.minecraftforge.common.property.PropertyFloat;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import javax.annotation.Nonnull;
 
 public abstract class BlockRailBase extends Block {
 	
@@ -212,22 +209,27 @@ public abstract class BlockRailBase extends Block {
 				tileEntity.getWorld().setBlockToAir(pos.up());
 			}
 		}
-		if (tileEntity.getParentTile() != null && tileEntity.getParentTile().getParentTile() != null) {
-			TileRail switchTile = tileEntity.getParentTile();
-			if (tileEntity instanceof TileRail) {
-				switchTile = (TileRail) tileEntity;
+
+        NBTTagCompound data = tileEntity.getReplaced();
+		while (true) {
+			if (tileEntity.getParentTile() != null && tileEntity.getParentTile().getParentTile() != null) {
+				TileRail switchTile = tileEntity.getParentTile();
+				if (tileEntity instanceof TileRail) {
+					switchTile = (TileRail) tileEntity;
+				}
+                SwitchState state = SwitchUtil.getSwitchState(switchTile);
+                if (state != SwitchState.NONE) {
+                    switchTile.setSwitchState(state);
+                }
 			}
-			SwitchState state = SwitchUtil.getSwitchState(switchTile);
-			if (state != SwitchState.NONE) {
-				switchTile.setSwitchState(state);
+			if (data == null) {
+				break;
 			}
+            tileEntity = new TileRailBase();
+            tileEntity.readFromNBT(data);
+            tileEntity.setWorld(syncd.getWorld());
+            data = tileEntity.getReplaced();
 		}
-        if (tileEntity.getParentReplaced() != null && tileEntity instanceof TileRailGag) {
-            TileRailBase replacedParent = TileRailBase.get(tileEntity.getWorld(), tileEntity.getParentReplaced());
-            if (replacedParent != null && replacedParent.getParentTile() != tileEntity.getParentTile()) {
-                this.onNeighborChange(world, replacedParent.getPos(), neighbor);
-            }
-        }
 	}
 
 	@Override
@@ -283,6 +285,15 @@ public abstract class BlockRailBase extends Block {
 		Block block = Block.getBlockFromItem(stack.getItem());
 		TileRailBase te = TileRailBase.get(worldIn, pos);
 		if (te != null) {
+			if (stack.getItem() == IRItems.ITEM_SWITCH_KEY) {
+				TileRail tileSwitch = te.findSwitchParent();
+				if (tileSwitch != null) {
+					SwitchState switchForced = te.cycleSwitchForced();
+					if (!worldIn.isRemote) {
+						playerIn.sendMessage(switchForced.equals(SwitchState.NONE) ? new TextComponentString(ChatText.SWITCH_UNLOCKED.toString()) : ChatText.SWITCH_LOCKED.getMessage(switchForced.toString()));
+					}
+				}
+			}
 			if (block == Blocks.REDSTONE_TORCH) {
 				String next = te.nextAugmentRedstoneMode();
 				if (next != null) {
@@ -339,4 +350,9 @@ public abstract class BlockRailBase extends Block {
     {
         return true;
     }
+
+	@SideOnly(Side.CLIENT)
+	public BlockRenderLayer getBlockLayer() {
+		return BlockRenderLayer.CUTOUT_MIPPED;
+	}
 }
