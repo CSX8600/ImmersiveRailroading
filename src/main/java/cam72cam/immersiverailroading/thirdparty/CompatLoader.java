@@ -19,5 +19,6 @@ public class CompatLoader {
 	public static void load() {
 		invokeStatic("OpenComputers", "cam72cam.immersiverailroading.thirdparty.opencomputers.Compat", "init");
 		invokeStatic("immersiveengineering", "cam72cam.immersiverailroading.thirdparty.ImmersiveEngineering", "init");
+		invokeStatic("computercraft", "cam72cam.immersiverailroading.thirdparty.ComputerCraft", "init");
 	}
 }
